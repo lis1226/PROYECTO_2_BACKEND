@@ -2,6 +2,7 @@ package org.example.Server;
 
 import com.google.gson.Gson;
 import org.example.API.controllers.AuthController;
+import org.example.API.controllers.FarmaceuticoController;
 import org.example.API.controllers.MedicoController;
 import org.example.Domain.dtos.RequestDto;
 import org.example.Domain.dtos.ResponseDto;
@@ -18,17 +19,20 @@ public class ClientHandler implements Runnable {
     private final Socket clientSocket;
     private final AuthController authController;
     private final MedicoController medicoController;
-    private final SocketServer server;
+    private final FarmaceuticoController farmaceuticoController;
+    private final SocketServer server ;
     private final Gson gson = new Gson();
     private PrintWriter out;
 
     public ClientHandler(Socket clientSocket,
                          AuthController authController,
                          MedicoController medicoController,
+                         FarmaceuticoController farmaceuticoController,
                          SocketServer server) {
         this.clientSocket = clientSocket;
         this.authController = authController;
         this.medicoController = medicoController;
+        this.farmaceuticoController = farmaceuticoController;
         this.server = server;
     }
 
@@ -93,6 +97,10 @@ public class ClientHandler implements Runnable {
 
             case "Medico":
                 response = medicoController.route(request);
+                break;
+
+            case "Farmaceutico":
+                response = farmaceuticoController.route(request);
                 break;
 
             default:

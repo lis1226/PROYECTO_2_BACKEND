@@ -1,9 +1,11 @@
 package org.example;
 
 import org.example.API.controllers.AuthController;
+import org.example.API.controllers.FarmaceuticoController;
 import org.example.API.controllers.MedicoController;
 import org.example.DataAccess.HibernateUtil;
 import org.example.DataAccess.services.AuthService;
+import org.example.DataAccess.services.FarmaceuticoService;
 import org.example.DataAccess.services.MedicoService;
 import org.example.Domain.models.Medico;
 import org.example.Server.MessageBroadcaster;
@@ -22,6 +24,9 @@ public class Main {
         MedicoService medicoService = new MedicoService(sessionFactory);
         MedicoController medicoController = new MedicoController(medicoService);
 
+        FarmaceuticoService farmaceuticoService = new FarmaceuticoService(sessionFactory);
+        FarmaceuticoController farmaceuticoController = new FarmaceuticoController(farmaceuticoService);
+
         var createUsers = true;
         /*if(createUsers) {
             authService.register("user", "email@example.com", "pass", "USER");
@@ -33,7 +38,8 @@ public class Main {
         SocketServer requestServer = new SocketServer(
                 requestPort,
                 authController,
-                medicoController
+                medicoController,
+                farmaceuticoController
                 );
 
         // Server for chat/broadcasting (persistent connections)
