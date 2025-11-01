@@ -1,25 +1,51 @@
 package org.example.API.controllers;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 import org.example.DataAccess.services.PacienteService;
 import org.example.Domain.dtos.RequestDto;
 import org.example.Domain.dtos.ResponseDto;
 import org.example.Domain.dtos.paciente.*;
 import org.example.Domain.models.Paciente;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class PacienteController {
     private final PacienteService pacienteService;
-    private final Gson gson = new Gson();
+    private final Gson gson;
 
     public PacienteController(PacienteService pacienteService) {
         this.pacienteService = pacienteService;
+        // Configurar Gson con adaptador para Date
+        this.gson = new GsonBuilder()
+                .setDateFormat("dd/MM/yyyy")
+                .registerTypeAdapter(Date.class, (JsonSerializer<Date>) (date, type, context) -> {
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                    return new JsonPrimitive(sdf.format(date));
+                })
+                .registerTypeAdapter(Date.class, (JsonDeserializer<Date>) (json, type, context) -> {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                        sdf.setLenient(false);
+                        return sdf.parse(json.getAsString());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error parsing date: " + e.getMessage());
+                    }
+                })
+                .create();
     }
 
     public ResponseDto route(RequestDto requestDto) {
         try {
+            System.out.println("[PacienteController] Routing request: " + requestDto.getRequest());
+            System.out.println("[PacienteController] Data received: " + requestDto.getData());
+
             switch (requestDto.getRequest()) {
                 case "add":
                     return handleAddPaciente(requestDto);
@@ -34,7 +60,9 @@ public class PacienteController {
                 default:
                     return new ResponseDto(false, "Unknown request: " + requestDto.getRequest(), null);
             }
-        }catch (Exception e){
+        } catch (Exception e) {
+            System.err.println("[PacienteController] Error: " + e.getMessage());
+            e.printStackTrace();
             return new ResponseDto(false, e.getMessage(), null);
         }
     }
@@ -42,15 +70,27 @@ public class PacienteController {
     // -------------------------
     // ADD
     // -------------------------
-
     private ResponseDto handleAddPaciente(RequestDto requestDto) {
         try {
+            System.out.println("[PacienteController] handleAddPaciente - Raw data: " + requestDto.getData());
+
             AddPacienteRequestDto dto = gson.fromJson(requestDto.getData(), AddPacienteRequestDto.class);
-            Paciente paciente = pacienteService.createPaciente(dto.getId(), dto.getUsuarioId(), dto.getNombre(), dto.getFechaNacimiento());
+
+            System.out.println("[PacienteController] Parsed DTO - ID: " + dto.getId() +
+                    ", Nombre: " + dto.getNombre() +
+                    ", Fecha: " + dto.getFechaNacimiento());
+
+            Paciente paciente = pacienteService.createPaciente(
+                    dto.getId(),
+                    dto.getUsuarioId(),
+                    dto.getNombre(),
+                    dto.getFechaNacimiento()
+            );
 
             return new ResponseDto(true, "Paciente added successfully", gson.toJson(toResponseDto(paciente)));
         } catch (Exception e) {
             System.err.println("[PacienteController] Error in handleAddPaciente: " + e.getMessage());
+            e.printStackTrace();
             throw e;
         }
     }
@@ -68,6 +108,8 @@ public class PacienteController {
 
             return new ResponseDto(true, "Paciente updated successfully", gson.toJson(toResponseDto(updated)));
         } catch (Exception e) {
+            System.err.println("[PacienteController] Error in handleUpdatePaciente: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
@@ -76,34 +118,51 @@ public class PacienteController {
     // DELETE
     // -------------------------
     private ResponseDto handleDeletePaciente(RequestDto requestDto) {
-        DeletePacienteRequestDto dto = gson.fromJson(requestDto.getData(), DeletePacienteRequestDto.class);
-        boolean deleted = pacienteService.deletePaciente(dto.getId());
-        if (!deleted) return new ResponseDto(false, "Paciente not found", null);
-        return new ResponseDto(true, "Paciente deleted successfully", null);
+        try {
+            DeletePacienteRequestDto dto = gson.fromJson(requestDto.getData(), DeletePacienteRequestDto.class);
+            boolean deleted = pacienteService.deletePaciente(dto.getId());
+            if (!deleted) return new ResponseDto(false, "Paciente not found", null);
+            return new ResponseDto(true, "Paciente deleted successfully", null);
+        } catch (Exception e) {
+            System.err.println("[PacienteController] Error in handleDeletePaciente: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
     // -------------------------
     // LIST
     // -------------------------
     private ResponseDto handleListPaciente(RequestDto requestDto) {
-        List<Paciente> pacientes = pacienteService.getAllPacientes();
-        List<PacienteResponseDto> pacDtos = pacientes.stream().map(this::toResponseDto).collect(Collectors.toList());
-        return new ResponseDto(true, "Pacientes found", gson.toJson(new ListPacientesResponseDto(pacDtos)));
+        try {
+            List<Paciente> pacientes = pacienteService.getAllPacientes();
+            List<PacienteResponseDto> pacDtos = pacientes.stream()
+                    .map(this::toResponseDto)
+                    .collect(Collectors.toList());
+            return new ResponseDto(true, "Pacientes found", gson.toJson(new ListPacientesResponseDto(pacDtos)));
+        } catch (Exception e) {
+            System.err.println("[PacienteController] Error in handleListPaciente: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
     // -------------------------
     // GET
     // -------------------------
     private ResponseDto handleGetPaciente(RequestDto requestDto) {
-        DeletePacienteRequestDto dto = gson.fromJson(requestDto.getData(), DeletePacienteRequestDto.class);
-        Paciente paciente = pacienteService.getPacienteById(dto.getId());
-        if (paciente == null)
-            return new ResponseDto(false, "Paciente not found", null);
-        return new ResponseDto(true, "Paciente found", gson.toJson(toResponseDto(paciente)));
+        try {
+            DeletePacienteRequestDto dto = gson.fromJson(requestDto.getData(), DeletePacienteRequestDto.class);
+            Paciente paciente = pacienteService.getPacienteById(dto.getId());
+            if (paciente == null)
+                return new ResponseDto(false, "Paciente not found", null);
+            return new ResponseDto(true, "Paciente found", gson.toJson(toResponseDto(paciente)));
+        } catch (Exception e) {
+            System.err.println("[PacienteController] Error in handleGetPaciente: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
-
-
-
 
     // -------------------------
     // HELPER
@@ -116,13 +175,4 @@ public class PacienteController {
                 paciente.getFechaNacimiento()
         );
     }
-
-
-
-
-
-
-
-
-
 }

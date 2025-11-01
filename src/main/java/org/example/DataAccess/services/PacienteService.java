@@ -12,6 +12,7 @@ import java.util.List;
 
 public class PacienteService {
     private final SessionFactory sessionFactory;
+
     public PacienteService(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
@@ -19,10 +20,11 @@ public class PacienteService {
     // -------------------------
     // CREATE
     // -------------------------
-
     public Paciente createPaciente(String pacienteId, Long usuarioId, String nombre, Date fechaNacimiento) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.openSession();
             tx = session.beginTransaction();
 
             Usuario usuario;
@@ -31,22 +33,43 @@ public class PacienteService {
                 if (usuario == null)
                     throw new IllegalArgumentException("Usuario con ID " + usuarioId + " no encontrado");
             } else {
+                // Crear usuario temporal con ROL PACIENTE
                 usuario = new Usuario();
                 usuario.setUsername("temp_paciente_" + pacienteId);
                 usuario.setEmail("temp" + pacienteId + "@hospital.local");
                 usuario.setPasswordHash(generateTemporaryPasswordHash());
                 usuario.setSalt("temp_salt");
+                // CRÍTICO: Asignar el rol ANTES de persistir
                 usuario.setRol("PACIENTE");
             }
 
             Paciente paciente = new Paciente(pacienteId, usuario, nombre, fechaNacimiento);
-            session.persist(paciente); // Ya no necesitas session.persist(usuario)
+            session.persist(paciente);
             tx.commit();
+
+            // Inicializar el usuario antes de cerrar la sesión
+            Hibernate.initialize(paciente.getUsuario());
+
             return paciente;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            System.err.println("[PacienteService] Error: " + e.getMessage());
-            throw e;
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    System.err.println("[PacienteService] Error during rollback: " + rollbackEx.getMessage());
+                }
+            }
+            System.err.println("[PacienteService] Error in createPaciente: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error creating paciente: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                try {
+                    session.close();
+                } catch (Exception closeEx) {
+                    System.err.println("[PacienteService] Error closing session: " + closeEx.getMessage());
+                }
+            }
         }
     }
 
@@ -55,48 +78,62 @@ public class PacienteService {
         return tempPassword; // Temporal (sin hashing real)
     }
 
-
     // -------------------------
     // READ
     // -------------------------
     public Paciente getPacienteById(String pacienteId) {
-        try (Session session = sessionFactory.openSession()) {
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
             Paciente paciente = session.find(Paciente.class, pacienteId);
-            if (paciente != null) Hibernate.initialize(paciente.getUsuario());
+            if (paciente != null) {
+                Hibernate.initialize(paciente.getUsuario());
+            }
             return paciente;
         } catch (Exception e) {
             System.err.println("[PacienteService] Error in getPacienteById: " + e.getMessage());
-            throw e;
+            e.printStackTrace();
+            throw new RuntimeException("Error getting paciente: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
     public List<Paciente> getAllPacientes() {
-        try (Session session = sessionFactory.openSession()) {
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
             List<Paciente> pacientes = session.createQuery("from Paciente", Paciente.class).list();
-            pacientes.forEach(m -> Hibernate.initialize(m.getUsuario()));
+            pacientes.forEach(p -> Hibernate.initialize(p.getUsuario()));
             return pacientes;
         } catch (Exception e) {
             System.err.println("[PacienteService] Error in getAllPacientes: " + e.getMessage());
-            throw e;
+            e.printStackTrace();
+            throw new RuntimeException("Error getting all pacientes: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
     // -------------------------
     // UPDATE
     // -------------------------
-
-    public Paciente updatePaciente(String medicoId, String nuevoNombre, Date fechaNacimiento) {
+    public Paciente updatePaciente(String pacienteId, String nuevoNombre, Date fechaNacimiento) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.openSession();
             tx = session.beginTransaction();
 
-            Paciente paciente = session.find(Paciente.class, medicoId);
+            Paciente paciente = session.find(Paciente.class, pacienteId);
             if (paciente == null) {
-                tx.rollback();
                 return null;
             }
 
-            // Actualiza los campos del médico
             if (nuevoNombre != null && !nuevoNombre.isBlank()) {
                 paciente.setNombre(nuevoNombre);
             }
@@ -104,21 +141,35 @@ public class PacienteService {
                 paciente.setFechaNacimiento(fechaNacimiento);
             }
 
-            // Ejemplo: si quisieras actualizar datos del usuario también
             Usuario usuario = paciente.getUsuario();
             if (usuario != null) {
                 usuario.setUpdatedAt(java.time.LocalDateTime.now());
-                // Si quisieras cambiar username o email podrías hacerlo aquí
-                // usuario.setUsername("nuevo_nombre");
+                // Asegurarse de que el rol permanece correcto
+                if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
+                    usuario.setRol("PACIENTE");
+                }
             }
 
             session.merge(paciente);
             tx.commit();
+
+            Hibernate.initialize(paciente.getUsuario());
             return paciente;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    System.err.println("[PacienteService] Error during rollback: " + rollbackEx.getMessage());
+                }
+            }
             System.err.println("[PacienteService] Error in updatePaciente: " + e.getMessage());
-            throw e;
+            e.printStackTrace();
+            throw new RuntimeException("Error updating paciente: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -126,13 +177,14 @@ public class PacienteService {
     // DELETE
     // -------------------------
     public boolean deletePaciente(String pacienteId) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.openSession();
             tx = session.beginTransaction();
 
             Paciente paciente = session.find(Paciente.class, pacienteId);
             if (paciente == null) {
-                tx.rollback();
                 return false;
             }
 
@@ -140,13 +192,20 @@ public class PacienteService {
             tx.commit();
             return true;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    System.err.println("[PacienteService] Error during rollback: " + rollbackEx.getMessage());
+                }
+            }
             System.err.println("[PacienteService] Error in deletePaciente: " + e.getMessage());
-            throw e;
+            e.printStackTrace();
+            throw new RuntimeException("Error deleting paciente: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
-
-
-
-
 }

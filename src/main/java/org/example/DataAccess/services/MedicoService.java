@@ -30,16 +30,18 @@ public class MedicoService {
                 if (usuario == null)
                     throw new IllegalArgumentException("Usuario con ID " + usuarioId + " no encontrado");
             } else {
+                // Crear usuario temporal con ROL MÉDICO
                 usuario = new Usuario();
                 usuario.setUsername("temp_medico_" + medicoId);
                 usuario.setEmail("temp" + medicoId + "@hospital.local");
                 usuario.setPasswordHash(generateTemporaryPasswordHash());
                 usuario.setSalt("temp_salt");
+                // CAMBIO CRÍTICO: Asignar el rol ANTES de persistir
                 usuario.setRol("MEDICO");
             }
 
             Medico medico = new Medico(medicoId, usuario, nombre, especialidad);
-            session.persist(medico); // Ya no necesitas session.persist(usuario)
+            session.persist(medico);
             tx.commit();
             return medico;
         } catch (Exception e) {
@@ -82,7 +84,6 @@ public class MedicoService {
     // -------------------------
     // UPDATE
     // -------------------------
-
     public Medico updateMedico(String medicoId, String nuevoNombre, String nuevaEspecialidad) {
         Transaction tx = null;
         try (Session session = sessionFactory.openSession()) {
@@ -94,7 +95,6 @@ public class MedicoService {
                 return null;
             }
 
-            // Actualiza los campos del médico
             if (nuevoNombre != null && !nuevoNombre.isBlank()) {
                 medico.setNombre(nuevoNombre);
             }
@@ -102,12 +102,13 @@ public class MedicoService {
                 medico.setEspecialidad(nuevaEspecialidad);
             }
 
-            // Ejemplo: si quisieras actualizar datos del usuario también
             Usuario usuario = medico.getUsuario();
             if (usuario != null) {
                 usuario.setUpdatedAt(java.time.LocalDateTime.now());
-                // Si quisieras cambiar username o email podrías hacerlo aquí
-                // usuario.setUsername("nuevo_nombre");
+                // Asegurarse de que el rol permanece correcto
+                if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
+                    usuario.setRol("MEDICO");
+                }
             }
 
             session.merge(medico);

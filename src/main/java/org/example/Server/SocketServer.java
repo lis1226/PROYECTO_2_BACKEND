@@ -17,17 +17,23 @@ public class SocketServer {
     private final FarmaceuticoController farmaceuticoController;
     private final MedicamentoController medicamentosController;
     private final PacienteController pacienteController;
+    private final RecetaController recetaController;
+    private final AdministradorController administradorController; // ✅ NEW
+
+
     private ServerSocket serverSocket;
     private final List<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
     private MessageBroadcaster messageBroadcaster;
 
-    public SocketServer(int port, AuthController authController, MedicoController medicoController, FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController, PacienteController pacienteController) {
+    public SocketServer(int port, AuthController authController, MedicoController medicoController, FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController, PacienteController pacienteController, RecetaController recetaController, AdministradorController administradorController) {
         this.port = port;
         this.authController = authController;
         this.medicoController = medicoController;
         this.farmaceuticoController = farmaceuticoController;
         this.medicamentosController = medicamentosController;
         this.pacienteController = pacienteController;
+        this.recetaController = recetaController;
+        this.administradorController = administradorController;
     }
 
     public void start() {
@@ -52,7 +58,7 @@ public class SocketServer {
 
                 // Track this client
 
-                ClientHandler handler = new ClientHandler(clientSocket, authController, medicoController, farmaceuticoController, medicamentosController, pacienteController, this);
+                ClientHandler handler = new ClientHandler(clientSocket, authController, medicoController, farmaceuticoController, medicamentosController, pacienteController, recetaController, administradorController,this);
                 activeClients.add(handler);
 
                 // Give it a descriptive thread name

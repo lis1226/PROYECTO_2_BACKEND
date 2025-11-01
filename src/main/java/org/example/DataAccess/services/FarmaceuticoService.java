@@ -16,10 +16,14 @@ public class FarmaceuticoService {
         this.sessionFactory = sessionFactory;
     }
 
+    // -------------------------
     // CREATE
+    // -------------------------
     public Farmaceutico createFarmaceutico(String id, Long usuarioId, String nombre) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.openSession();
             tx = session.beginTransaction();
 
             Usuario usuario;
@@ -28,82 +32,176 @@ public class FarmaceuticoService {
                 if (usuario == null)
                     throw new IllegalArgumentException("Usuario con ID " + usuarioId + " no encontrado");
             } else {
+                // Crear usuario temporal con ROL FARMACEUTICO
                 usuario = new Usuario();
                 usuario.setUsername("temp_farma_" + id);
                 usuario.setEmail("temp" + id + "@farmacia.local");
-                usuario.setPasswordHash("temp_hash");
+                usuario.setPasswordHash(generateTemporaryPasswordHash());
                 usuario.setSalt("temp_salt");
+                // CRÍTICO: Asignar el rol ANTES de persistir
                 usuario.setRol("FARMACEUTICO");
             }
 
-            Farmaceutico f = new Farmaceutico(id, usuario, nombre);
-            session.persist(f);
-
+            Farmaceutico farmaceutico = new Farmaceutico(id, usuario, nombre);
+            session.persist(farmaceutico);
             tx.commit();
-            return f;
+
+            // Inicializar el usuario antes de cerrar la sesión
+            Hibernate.initialize(farmaceutico.getUsuario());
+
+            return farmaceutico;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            System.err.println("[FarmaceuticoService] Error: " + e.getMessage());
-            throw e;
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    System.err.println("[FarmaceuticoService] Error during rollback: " + rollbackEx.getMessage());
+                }
+            }
+            System.err.println("[FarmaceuticoService] Error in createFarmaceutico: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error creating farmaceutico: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                try {
+                    session.close();
+                } catch (Exception closeEx) {
+                    System.err.println("[FarmaceuticoService] Error closing session: " + closeEx.getMessage());
+                }
+            }
         }
     }
 
+    private String generateTemporaryPasswordHash() {
+        String tempPassword = "Temp" + (int) (Math.random() * 10000);
+        return tempPassword; // Temporal (sin hashing real)
+    }
+
+    // -------------------------
     // READ
+    // -------------------------
     public Farmaceutico getFarmaceuticoById(String id) {
-        try (Session session = sessionFactory.openSession()) {
-            Farmaceutico f = session.find(Farmaceutico.class, id);
-            if (f != null) Hibernate.initialize(f.getUsuario());
-            return f;
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
+            Farmaceutico farmaceutico = session.find(Farmaceutico.class, id);
+            if (farmaceutico != null) {
+                Hibernate.initialize(farmaceutico.getUsuario());
+            }
+            return farmaceutico;
+        } catch (Exception e) {
+            System.err.println("[FarmaceuticoService] Error in getFarmaceuticoById: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error getting farmaceutico: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
     public List<Farmaceutico> getAllFarmaceuticos() {
-        try (Session session = sessionFactory.openSession()) {
-            List<Farmaceutico> list = session.createQuery("from Farmaceutico", Farmaceutico.class).list();
-            list.forEach(f -> Hibernate.initialize(f.getUsuario()));
-            return list;
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
+            List<Farmaceutico> farmaceuticos = session.createQuery("from Farmaceutico", Farmaceutico.class).list();
+            farmaceuticos.forEach(f -> Hibernate.initialize(f.getUsuario()));
+            return farmaceuticos;
+        } catch (Exception e) {
+            System.err.println("[FarmaceuticoService] Error in getAllFarmaceuticos: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error getting all farmaceuticos: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
+    // -------------------------
     // UPDATE
+    // -------------------------
     public Farmaceutico updateFarmaceutico(String id, String nombre) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.openSession();
             tx = session.beginTransaction();
-            Farmaceutico f = session.find(Farmaceutico.class, id);
-            if (f == null) {
-                tx.rollback();
+
+            Farmaceutico farmaceutico = session.find(Farmaceutico.class, id);
+            if (farmaceutico == null) {
                 return null;
             }
 
-            if (nombre != null && !nombre.isBlank())
-                f.setNombre(nombre);
+            if (nombre != null && !nombre.isBlank()) {
+                farmaceutico.setNombre(nombre);
+            }
 
-            session.merge(f);
+            Usuario usuario = farmaceutico.getUsuario();
+            if (usuario != null) {
+                usuario.setUpdatedAt(java.time.LocalDateTime.now());
+                // Asegurarse de que el rol permanece correcto
+                if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
+                    usuario.setRol("FARMACEUTICO");
+                }
+            }
+
+            session.merge(farmaceutico);
             tx.commit();
-            return f;
+
+            Hibernate.initialize(farmaceutico.getUsuario());
+            return farmaceutico;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    System.err.println("[FarmaceuticoService] Error during rollback: " + rollbackEx.getMessage());
+                }
+            }
+            System.err.println("[FarmaceuticoService] Error in updateFarmaceutico: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error updating farmaceutico: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
+    // -------------------------
     // DELETE
+    // -------------------------
     public boolean deleteFarmaceutico(String id) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.openSession();
             tx = session.beginTransaction();
-            Farmaceutico f = session.find(Farmaceutico.class, id);
-            if (f == null) {
-                tx.rollback();
+
+            Farmaceutico farmaceutico = session.find(Farmaceutico.class, id);
+            if (farmaceutico == null) {
                 return false;
             }
-            session.remove(f);
+
+            session.remove(farmaceutico);
             tx.commit();
             return true;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    System.err.println("[FarmaceuticoService] Error during rollback: " + rollbackEx.getMessage());
+                }
+            }
+            System.err.println("[FarmaceuticoService] Error in deleteFarmaceutico: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error deleting farmaceutico: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 }

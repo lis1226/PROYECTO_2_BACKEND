@@ -1,4 +1,4 @@
-package org.example.Domain.Farmaceutico;
+package org.example.Domain.dtos.Farmaceutico;
 
 import java.util.List;
 

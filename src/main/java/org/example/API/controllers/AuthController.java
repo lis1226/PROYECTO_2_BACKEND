@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import org.example.DataAccess.services.AuthService;
 import org.example.Domain.dtos.RequestDto;
 import org.example.Domain.dtos.ResponseDto;
+import org.example.Domain.dtos.auth.ChangePasswordRequestDto;
 import org.example.Domain.dtos.auth.LoginRequestDto;
 import org.example.Domain.dtos.auth.RegisterRequestDto;
 import org.example.Domain.dtos.auth.UsuarioResponseDto;
@@ -27,6 +28,8 @@ public class AuthController {
                     return handleRegister(request);
                 case "logout":
                     return handleLogout(request);
+                case "changePassword":
+                    return handleChangePassword(request);
                 default:
                     return new ResponseDto(false, "Unknown request: " + request.getRequest(), null);
             }
@@ -75,6 +78,52 @@ public class AuthController {
         }
     }
 
+    // --- CHANGE PASSWORD ---
+    private ResponseDto handleChangePassword(RequestDto request) {
+        try {
+            ChangePasswordRequestDto changePasswordDto = gson.fromJson(request.getData(), ChangePasswordRequestDto.class);
+
+            // Validaciones básicas
+            if (changePasswordDto.getUsernameOrEmail() == null || changePasswordDto.getUsernameOrEmail().trim().isEmpty()) {
+                return new ResponseDto(false, "Username or email is required", null);
+            }
+
+            if (changePasswordDto.getCurrentPassword() == null || changePasswordDto.getCurrentPassword().trim().isEmpty()) {
+                return new ResponseDto(false, "Current password is required", null);
+            }
+
+            if (changePasswordDto.getNewPassword() == null || changePasswordDto.getNewPassword().trim().isEmpty()) {
+                return new ResponseDto(false, "New password is required", null);
+            }
+
+            if (changePasswordDto.getNewPassword().length() < 4) {
+                return new ResponseDto(false, "New password must be at least 4 characters long", null);
+            }
+
+            if (changePasswordDto.getCurrentPassword().equals(changePasswordDto.getNewPassword())) {
+                return new ResponseDto(false, "New password must be different from current password", null);
+            }
+
+            // Intentar cambiar la contraseña
+            boolean success = authService.changePassword(
+                    changePasswordDto.getUsernameOrEmail(),
+                    changePasswordDto.getCurrentPassword(),
+                    changePasswordDto.getNewPassword()
+            );
+
+            if (success) {
+                return new ResponseDto(true, "Password changed successfully", null);
+            } else {
+                return new ResponseDto(false, "Failed to change password. Please verify your current password.", null);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error in handleChangePassword: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseDto(false, "Server error: " + e.getMessage(), null);
+        }
+    }
+
     // --- LOGOUT ---
     private ResponseDto handleLogout(RequestDto request) {
         try {
@@ -85,11 +134,13 @@ public class AuthController {
         }
     }
 
-
     // --- HELPER: GET USER BY USERNAME ---
     public UsuarioResponseDto getUserByUsername(String username) {
         try {
             Usuario user = authService.getUserByUsername(username);
+            if (user == null) {
+                user = authService.getUserByEmail(username);
+            }
             if (user == null) return null;
 
             return new UsuarioResponseDto(
@@ -105,5 +156,4 @@ public class AuthController {
             throw e;
         }
     }
-
 }

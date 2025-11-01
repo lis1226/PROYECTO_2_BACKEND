@@ -19,7 +19,6 @@ public class AuthService {
     private static final int ITERATIONS = 65536;
     private static final int KEY_LENGTH = 256;
 
-
     public AuthService(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
@@ -61,7 +60,7 @@ public class AuthService {
     // User Login
     // -------------------------
     public boolean login(String usernameOrEmail, String password) {
-        try{
+        try {
             Usuario user = getUserByUsername(usernameOrEmail);
 
             if (user == null) {
@@ -79,6 +78,63 @@ public class AuthService {
             String message = String.format("An error occurred when processing: %s. Details: %s", "login", e);
             System.out.println(message);
             throw e;
+        }
+    }
+
+    // -------------------------
+    // Change Password
+    // -------------------------
+    public boolean changePassword(String usernameOrEmail, String currentPassword, String newPassword) {
+        Session session = null;
+        Transaction tx = null;
+
+        try {
+            // Primero verificar que la contraseña actual sea correcta
+            if (!login(usernameOrEmail, currentPassword)) {
+                System.out.println("[AuthService] Current password is incorrect for user: " + usernameOrEmail);
+                return false;
+            }
+
+            // Obtener el usuario
+            Usuario user = getUserByUsername(usernameOrEmail);
+            if (user == null) {
+                user = getUserByEmail(usernameOrEmail);
+            }
+
+            if (user == null) {
+                System.out.println("[AuthService] User not found: " + usernameOrEmail);
+                return false;
+            }
+
+            // Generar nueva salt y hash para la nueva contraseña
+            String newSalt = generateSalt();
+            String newHashedPassword = hashPassword(newPassword, newSalt);
+
+            // Actualizar la contraseña en la base de datos
+            session = sessionFactory.openSession();
+            tx = session.beginTransaction();
+
+            user.setSalt(newSalt);
+            user.setPasswordHash(newHashedPassword);
+
+            session.merge(user); // Actualizar el usuario
+            tx.commit();
+
+            System.out.println("[AuthService] Password changed successfully for user: " + user.getUsername());
+            return true;
+
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            String message = String.format("An error occurred when processing: %s. Details: %s", "changePassword", e);
+            System.out.println(message);
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
         }
     }
 
@@ -144,5 +200,4 @@ public class AuthService {
             throw new RuntimeException("Error inesperado al intentar crear el hash del usuario.", e);
         }
     }
-
 }

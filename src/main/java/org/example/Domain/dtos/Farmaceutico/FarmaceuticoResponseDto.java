@@ -1,11 +1,15 @@
-package org.example.Domain.Farmaceutico;
+package org.example.Domain.dtos.Farmaceutico;
 
-public class AddFarmaceuticoRequestDto {
+public class FarmaceuticoResponseDto {
     private String id;
     private Long usuarioId;
     private String nombre;
 
-    public AddFarmaceuticoRequestDto() {}
+    public FarmaceuticoResponseDto(String id, Long usuarioId, String nombre) {
+        this.id = id;
+        this.usuarioId = usuarioId;
+        this.nombre = nombre;
+    }
 
     public String getId() { return id; }
     public Long getUsuarioId() { return usuarioId; }

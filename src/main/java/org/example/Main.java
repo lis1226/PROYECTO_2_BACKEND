@@ -2,6 +2,7 @@ package org.example;
 
 import org.example.API.controllers.*;
 import org.example.DataAccess.HibernateUtil;
+import org.example.DataAccess.RecetaRepository;
 import org.example.DataAccess.services.*;
 import org.example.Domain.models.Medico;
 import org.example.Server.MessageBroadcaster;
@@ -29,7 +30,12 @@ public class Main {
         PacienteService pacienteService = new PacienteService(sessionFactory);
         PacienteController pacienteController = new PacienteController(pacienteService);
 
+        RecetaService recetaService = new RecetaService(sessionFactory);
+        RecetaController recetaController = new RecetaController(recetaService);
 
+        org.example.DataAccess.repositories.AdministradorRepository administradorRepo = new org.example.DataAccess.repositories.AdministradorRepository(sessionFactory);
+        AdministradorService administradorService = new AdministradorService(administradorRepo);
+        AdministradorController administradorController = new AdministradorController(administradorService);
 
 
         var createUsers = true;
@@ -46,7 +52,9 @@ public class Main {
                 medicoController,
                 farmaceuticoController,
                 medicamentoController,
-                pacienteController
+                pacienteController,
+                recetaController,
+                administradorController
                 );
 
         // Server for chat/broadcasting (persistent connections)

@@ -2,7 +2,7 @@ package org.example.API.controllers;
 
 import com.google.gson.Gson;
 import org.example.DataAccess.services.FarmaceuticoService;
-import org.example.Domain.Farmaceutico.*;
+import org.example.Domain.dtos.Farmaceutico.*;
 import org.example.Domain.dtos.RequestDto;
 import org.example.Domain.dtos.ResponseDto;
 //import org.example.Domain.dtos.ListFarmaceuticosResponseDto;

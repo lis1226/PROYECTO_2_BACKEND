@@ -1,4 +1,4 @@
-package org.example.Domain.Farmaceutico;
+package org.example.Domain.dtos.Farmaceutico;
 
 public class UpdateFarmaceuticoRequestDto {
     private String id;
