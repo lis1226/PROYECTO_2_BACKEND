@@ -1,9 +1,6 @@
 package org.example.DataAccess;
 
-import org.example.Domain.models.Farmaceutico;
-import org.example.Domain.models.Medicamento;
-import org.example.Domain.models.Medico;
-import org.example.Domain.models.Usuario;
+import org.example.Domain.models.*;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
@@ -25,6 +22,7 @@ public class HibernateUtil {
                     .addAnnotatedClass(Medico.class)
                     .addAnnotatedClass(Farmaceutico.class)
                     .addAnnotatedClass(Medicamento.class)
+                    .addAnnotatedClass(Paciente.class)
                     // Agregar aqui otras entidades.
                     .buildSessionFactory();
 

@@ -1,9 +1,6 @@
 package org.example.Server;
 
-import org.example.API.controllers.AuthController;
-import org.example.API.controllers.FarmaceuticoController;
-import org.example.API.controllers.MedicamentoController;
-import org.example.API.controllers.MedicoController;
+import org.example.API.controllers.*;
 
 
 import java.io.IOException;
@@ -19,17 +16,18 @@ public class SocketServer {
     private final MedicoController medicoController;
     private final FarmaceuticoController farmaceuticoController;
     private final MedicamentoController medicamentosController;
+    private final PacienteController pacienteController;
     private ServerSocket serverSocket;
     private final List<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
     private MessageBroadcaster messageBroadcaster;
 
-    public SocketServer(int port, AuthController authController, MedicoController medicoController, FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController) {
+    public SocketServer(int port, AuthController authController, MedicoController medicoController, FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController, PacienteController pacienteController) {
         this.port = port;
         this.authController = authController;
         this.medicoController = medicoController;
         this.farmaceuticoController = farmaceuticoController;
         this.medicamentosController = medicamentosController;
-
+        this.pacienteController = pacienteController;
     }
 
     public void start() {
@@ -54,7 +52,7 @@ public class SocketServer {
 
                 // Track this client
 
-                ClientHandler handler = new ClientHandler(clientSocket, authController, medicoController, farmaceuticoController, medicamentosController, this);
+                ClientHandler handler = new ClientHandler(clientSocket, authController, medicoController, farmaceuticoController, medicamentosController, pacienteController, this);
                 activeClients.add(handler);
 
                 // Give it a descriptive thread name

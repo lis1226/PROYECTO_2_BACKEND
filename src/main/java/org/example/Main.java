@@ -1,14 +1,8 @@
 package org.example;
 
-import org.example.API.controllers.AuthController;
-import org.example.API.controllers.FarmaceuticoController;
-import org.example.API.controllers.MedicamentoController;
-import org.example.API.controllers.MedicoController;
+import org.example.API.controllers.*;
 import org.example.DataAccess.HibernateUtil;
-import org.example.DataAccess.services.AuthService;
-import org.example.DataAccess.services.FarmaceuticoService;
-import org.example.DataAccess.services.MedicamentoService;
-import org.example.DataAccess.services.MedicoService;
+import org.example.DataAccess.services.*;
 import org.example.Domain.models.Medico;
 import org.example.Server.MessageBroadcaster;
 import org.example.Server.SocketServer;
@@ -32,6 +26,11 @@ public class Main {
         MedicamentoService medicamentoService = new MedicamentoService(sessionFactory);
         MedicamentoController medicamentoController = new MedicamentoController(medicamentoService);
 
+        PacienteService pacienteService = new PacienteService(sessionFactory);
+        PacienteController pacienteController = new PacienteController(pacienteService);
+
+
+
 
         var createUsers = true;
         /*if(createUsers) {
@@ -46,7 +45,8 @@ public class Main {
                 authController,
                 medicoController,
                 farmaceuticoController,
-                medicamentoController
+                medicamentoController,
+                pacienteController
                 );
 
         // Server for chat/broadcasting (persistent connections)

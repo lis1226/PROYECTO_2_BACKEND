@@ -1,10 +1,7 @@
 package org.example.Server;
 
 import com.google.gson.Gson;
-import org.example.API.controllers.AuthController;
-import org.example.API.controllers.FarmaceuticoController;
-import org.example.API.controllers.MedicamentoController;
-import org.example.API.controllers.MedicoController;
+import org.example.API.controllers.*;
 import org.example.Domain.dtos.RequestDto;
 import org.example.Domain.dtos.ResponseDto;
 import org.example.Domain.dtos.auth.UsuarioResponseDto;
@@ -22,6 +19,7 @@ public class ClientHandler implements Runnable {
     private final MedicoController medicoController;
     private final FarmaceuticoController farmaceuticoController;
     private final MedicamentoController medicamentosController;
+    private final PacienteController pacienteController;
     private final SocketServer server ;
     private final Gson gson = new Gson();
     private PrintWriter out;
@@ -29,13 +27,14 @@ public class ClientHandler implements Runnable {
     public ClientHandler(Socket clientSocket,
                          AuthController authController,
                          MedicoController medicoController,
-                         FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController,
+                         FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController, PacienteController pacienteController,
                          SocketServer server) {
         this.clientSocket = clientSocket;
         this.authController = authController;
         this.medicoController = medicoController;
         this.farmaceuticoController = farmaceuticoController;
         this.medicamentosController = medicamentosController;
+        this.pacienteController = pacienteController;
         this.server = server;
     }
 
@@ -110,6 +109,10 @@ public class ClientHandler implements Runnable {
            case "Medicamento":
                response = medicamentosController.route(request);
                break;
+
+           case "Paciente":
+                response = pacienteController.route(request);
+                break;
 
             default:
                 response = new ResponseDto(false, "Unknown controller", null);
