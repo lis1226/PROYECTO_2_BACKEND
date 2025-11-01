@@ -2,10 +2,12 @@ package org.example;
 
 import org.example.API.controllers.AuthController;
 import org.example.API.controllers.FarmaceuticoController;
+import org.example.API.controllers.MedicamentoController;
 import org.example.API.controllers.MedicoController;
 import org.example.DataAccess.HibernateUtil;
 import org.example.DataAccess.services.AuthService;
 import org.example.DataAccess.services.FarmaceuticoService;
+import org.example.DataAccess.services.MedicamentoService;
 import org.example.DataAccess.services.MedicoService;
 import org.example.Domain.models.Medico;
 import org.example.Server.MessageBroadcaster;
@@ -27,6 +29,10 @@ public class Main {
         FarmaceuticoService farmaceuticoService = new FarmaceuticoService(sessionFactory);
         FarmaceuticoController farmaceuticoController = new FarmaceuticoController(farmaceuticoService);
 
+        MedicamentoService medicamentoService = new MedicamentoService(sessionFactory);
+        MedicamentoController medicamentoController = new MedicamentoController(medicamentoService);
+
+
         var createUsers = true;
         /*if(createUsers) {
             authService.register("user", "email@example.com", "pass", "USER");
@@ -39,7 +45,8 @@ public class Main {
                 requestPort,
                 authController,
                 medicoController,
-                farmaceuticoController
+                farmaceuticoController,
+                medicamentoController
                 );
 
         // Server for chat/broadcasting (persistent connections)

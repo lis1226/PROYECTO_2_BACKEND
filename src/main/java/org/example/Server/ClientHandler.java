@@ -3,6 +3,7 @@ package org.example.Server;
 import com.google.gson.Gson;
 import org.example.API.controllers.AuthController;
 import org.example.API.controllers.FarmaceuticoController;
+import org.example.API.controllers.MedicamentoController;
 import org.example.API.controllers.MedicoController;
 import org.example.Domain.dtos.RequestDto;
 import org.example.Domain.dtos.ResponseDto;
@@ -20,6 +21,7 @@ public class ClientHandler implements Runnable {
     private final AuthController authController;
     private final MedicoController medicoController;
     private final FarmaceuticoController farmaceuticoController;
+    private final MedicamentoController medicamentosController;
     private final SocketServer server ;
     private final Gson gson = new Gson();
     private PrintWriter out;
@@ -27,12 +29,13 @@ public class ClientHandler implements Runnable {
     public ClientHandler(Socket clientSocket,
                          AuthController authController,
                          MedicoController medicoController,
-                         FarmaceuticoController farmaceuticoController,
+                         FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController,
                          SocketServer server) {
         this.clientSocket = clientSocket;
         this.authController = authController;
         this.medicoController = medicoController;
         this.farmaceuticoController = farmaceuticoController;
+        this.medicamentosController = medicamentosController;
         this.server = server;
     }
 
@@ -102,6 +105,11 @@ public class ClientHandler implements Runnable {
             case "Farmaceutico":
                 response = farmaceuticoController.route(request);
                 break;
+
+
+           case "Medicamento":
+               response = medicamentosController.route(request);
+               break;
 
             default:
                 response = new ResponseDto(false, "Unknown controller", null);

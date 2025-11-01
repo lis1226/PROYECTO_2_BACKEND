@@ -2,6 +2,7 @@ package org.example.Server;
 
 import org.example.API.controllers.AuthController;
 import org.example.API.controllers.FarmaceuticoController;
+import org.example.API.controllers.MedicamentoController;
 import org.example.API.controllers.MedicoController;
 
 
@@ -17,15 +18,18 @@ public class SocketServer {
     private final AuthController authController;
     private final MedicoController medicoController;
     private final FarmaceuticoController farmaceuticoController;
+    private final MedicamentoController medicamentosController;
     private ServerSocket serverSocket;
     private final List<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
     private MessageBroadcaster messageBroadcaster;
 
-    public SocketServer(int port, AuthController authController, MedicoController medicoController, FarmaceuticoController farmaceuticoController) {
+    public SocketServer(int port, AuthController authController, MedicoController medicoController, FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController) {
         this.port = port;
         this.authController = authController;
         this.medicoController = medicoController;
         this.farmaceuticoController = farmaceuticoController;
+        this.medicamentosController = medicamentosController;
+
     }
 
     public void start() {
@@ -49,8 +53,8 @@ public class SocketServer {
                 System.out.println("[SocketServer] New client connected from " + clientSocket.getInetAddress());
 
                 // Track this client
-               // SocketServer socketServer = this;
-                ClientHandler handler = new ClientHandler(clientSocket, authController, medicoController, farmaceuticoController,this);
+
+                ClientHandler handler = new ClientHandler(clientSocket, authController, medicoController, farmaceuticoController, medicamentosController, this);
                 activeClients.add(handler);
 
                 // Give it a descriptive thread name
