@@ -7,7 +7,9 @@ import org.example.Domain.dtos.ResponseDto;
 import org.example.Domain.dtos.administrador.*;
 import org.example.Domain.models.Administrador;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AdministradorController {
@@ -59,11 +61,18 @@ public class AdministradorController {
     }
 
     private ResponseDto handleList() {
-        List<Administrador> admins = administradorService.getAllAdministradores();
-        List<AdministradorResponseDto> responseList = admins.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-        return new ResponseDto(true, "Administradores encontrados", gson.toJson(responseList));
+        try {
+            List<Administrador> admins = administradorService.getAllAdministradores();
+
+            // Empaquetamos dentro de un objeto
+            Map<String, Object> data = new HashMap<>();
+            data.put("administradores", admins);
+
+            String jsonData = new Gson().toJson(data);
+            return new ResponseDto(true, "Administradores encontrados", jsonData);
+        } catch (Exception e) {
+            return new ResponseDto(false, "Error obteniendo administradores: " + e.getMessage(), "");
+        }
     }
 
     private ResponseDto handleGet(RequestDto req) {

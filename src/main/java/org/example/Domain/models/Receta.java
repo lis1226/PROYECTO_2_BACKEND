@@ -1,104 +1,52 @@
 package org.example.Domain.models;
 
 import jakarta.persistence.*;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "recetas")
 public class Receta {
 
     @Id
-    @Column(length = 50)
-    private String id; // UUID string - mantenemos tipo String por compatibilidad
+    @Column(name = "id", length = 50)
+    private String id; // manteniendo String como dijiste
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "fecha_confeccion")
-    private Date fechaConfeccion;
+    @OneToMany(mappedBy = "receta", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RecetaItem> items = new ArrayList<>();
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "fecha_retiro")
-    private Date fechaRetiro;
+    @Column(name = "fechaConfeccion")
+    private LocalDateTime fechaConfeccion;
 
-    @Column(length = 30)
-    private String estado; // mantenemos String para máxima compatibilidad
+    @Column(name = "fechaRetiro")
+    private LocalDateTime fechaRetiro;
 
-    @Column(name = "id_paciente", length = 50)
-    private String idPaciente; // mantengo String para no romper el resto del proyecto
+    @Column(name = "medicoId", length = 255)
+    private String medicoId;
 
-    @Column(name = "id_medico", length = 50)
-    private String idMedico; // mantengo String
-
-    @OneToMany(mappedBy = "receta", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<DetalleReceta> detalles = new ArrayList<>();
+    @Column(name = "pacienteId", length = 255)
+    private String pacienteId;
 
     public Receta() {}
 
-    @PrePersist
-    protected void prePersist() {
-        if (id == null) id = UUID.randomUUID().toString();
-        if (fechaConfeccion == null) fechaConfeccion = new Date();
-        if (estado == null) estado = "confeccionada";
-    }
-
-    // Getters / Setters
-
+    // getters y setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+    public List<RecetaItem> getItems() { return items; }
+    public void setItems(List<RecetaItem> items) { this.items = items; }
+    public LocalDateTime getFechaConfeccion() { return fechaConfeccion; }
+    public void setFechaConfeccion(LocalDateTime fechaConfeccion) { this.fechaConfeccion = fechaConfeccion; }
+    public LocalDateTime getFechaRetiro() { return fechaRetiro; }
+    public void setFechaRetiro(LocalDateTime fechaRetiro) { this.fechaRetiro = fechaRetiro; }
+    public String getMedicoId() { return medicoId; }
+    public void setMedicoId(String medicoId) { this.medicoId = medicoId; }
+    public String getPacienteId() { return pacienteId; }
+    public void setPacienteId(String pacienteId) { this.pacienteId = pacienteId; }
 
-    public Date getFechaConfeccion() { return fechaConfeccion; }
-    public void setFechaConfeccion(Date fechaConfeccion) { this.fechaConfeccion = fechaConfeccion; }
-
-    public Date getFechaRetiro() { return fechaRetiro; }
-    public void setFechaRetiro(Date fechaRetiro) { this.fechaRetiro = fechaRetiro; }
-
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
-
-    public String getIdPaciente() { return idPaciente; }
-    public void setIdPaciente(String idPaciente) { this.idPaciente = idPaciente; }
-
-    public String getIdMedico() { return idMedico; }
-    public void setIdMedico(String idMedico) { this.idMedico = idMedico; }
-
-    public List<DetalleReceta> getDetalles() { return detalles; }
-    public void setDetalles(List<DetalleReceta> detalles) {
-        this.detalles.clear();
-        if (detalles != null) {
-            detalles.forEach(this::addDetalle);
-        }
-    }
-
-    public void addDetalle(DetalleReceta detalle) {
-        detalle.setReceta(this);
-        this.detalles.add(detalle);
-    }
-
-    public boolean modificarDetalle(DetalleReceta detalleModificado) {
-        for (int i = 0; i < detalles.size(); i++) {
-            if (Objects.equals(detalles.get(i).getIdMedicamento(), detalleModificado.getIdMedicamento())) {
-                detalleModificado.setId(detalles.get(i).getId()); // preserve PK
-                detalleModificado.setReceta(this);
-                detalles.set(i, detalleModificado);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean eliminarDetallePorMedicamento(String idMedicamento) {
-        return detalles.removeIf(d -> Objects.equals(d.getIdMedicamento(), idMedicamento));
-    }
-
-    @Override
-    public String toString() {
-        return "Receta{" +
-                "id='" + id + '\'' +
-                ", fechaConfeccion=" + fechaConfeccion +
-                ", fechaRetiro=" + fechaRetiro +
-                ", estado='" + estado + '\'' +
-                ", idPaciente='" + idPaciente + '\'' +
-                ", idMedico='" + idMedico + '\'' +
-                ", detalles=" + detalles +
-                '}';
+    // helper para agregar items manteniendo referencia
+    public void addItem(RecetaItem item) {
+        item.setReceta(this);
+        items.add(item);
     }
 }

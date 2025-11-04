@@ -18,14 +18,24 @@ public class SocketServer {
     private final MedicamentoController medicamentosController;
     private final PacienteController pacienteController;
     private final RecetaController recetaController;
-    private final AdministradorController administradorController; // ✅ NEW
-
+    private final DespachoController despachoController;
+    private final AdministradorController administradorController;
+    private final DashboardController dashboardController;
 
     private ServerSocket serverSocket;
     private final List<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
     private MessageBroadcaster messageBroadcaster;
 
-    public SocketServer(int port, AuthController authController, MedicoController medicoController, FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController, PacienteController pacienteController, RecetaController recetaController, AdministradorController administradorController) {
+    public SocketServer(int port,
+                        AuthController authController,
+                        MedicoController medicoController,
+                        FarmaceuticoController farmaceuticoController,
+                        MedicamentoController medicamentosController,
+                        PacienteController pacienteController,
+                        RecetaController recetaController,
+                        AdministradorController administradorController,
+                        DashboardController dashboardController,
+                        DespachoController despachoController) {
         this.port = port;
         this.authController = authController;
         this.medicoController = medicoController;
@@ -34,6 +44,8 @@ public class SocketServer {
         this.pacienteController = pacienteController;
         this.recetaController = recetaController;
         this.administradorController = administradorController;
+        this.dashboardController = dashboardController;
+        this.despachoController = despachoController;
     }
 
     public void start() {
@@ -58,7 +70,16 @@ public class SocketServer {
 
                 // Track this client
 
-                ClientHandler handler = new ClientHandler(clientSocket, authController, medicoController, farmaceuticoController, medicamentosController, pacienteController, recetaController, administradorController,this);
+                ClientHandler handler = new ClientHandler(clientSocket,
+                        authController,
+                        medicoController,
+                        farmaceuticoController,
+                        medicamentosController,
+                        pacienteController,
+                        recetaController,
+                        administradorController,
+                        dashboardController,
+                        despachoController, this);
                 activeClients.add(handler);
 
                 // Give it a descriptive thread name

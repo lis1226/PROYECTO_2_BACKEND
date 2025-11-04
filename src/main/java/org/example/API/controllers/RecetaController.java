@@ -1,17 +1,17 @@
 package org.example.API.controllers;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.example.DataAccess.services.RecetaService;
 import org.example.Domain.dtos.RequestDto;
 import org.example.Domain.dtos.ResponseDto;
-import org.example.Domain.dtos.receta.*;
-import org.example.Domain.models.DetalleReceta;
 import org.example.Domain.models.Receta;
 
+import java.lang.reflect.Type;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class RecetaController {
+
     private final RecetaService recetaService;
     private final Gson gson = new Gson();
 
@@ -19,75 +19,48 @@ public class RecetaController {
         this.recetaService = recetaService;
     }
 
-    public ResponseDto route(RequestDto requestDto) {
+    public ResponseDto handle(RequestDto request) {
+        String req = request.getRequest();
         try {
-            switch (requestDto.getRequest()) {
-                case "add":
-                    return handleAdd(requestDto);
-                case "update":
-                    return handleUpdate(requestDto);
-                case "delete":
-                    return handleDelete(requestDto);
+            switch (req) {
                 case "list":
-                    return handleList(requestDto);
+                    return list();
+                case "create":
+                    return create(request);
                 case "get":
-                    return handleGet(requestDto);
+                    return getById(request);
+                case "update":
+                    return update(request);
                 default:
-                    return new ResponseDto(false, "Unknown request: " + requestDto.getRequest(), null);
+                    return new ResponseDto(false, "Action no soportada: " + req, "");
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            return new ResponseDto(false, e.getMessage(), null);
+            return new ResponseDto(false, "Error en RecetaController: " + e.getMessage(), "");
         }
     }
 
-    private ResponseDto handleAdd(RequestDto req) {
-        AddRecetaRequestDto dto = gson.fromJson(req.getData(), AddRecetaRequestDto.class);
-        Receta receta = recetaService.createReceta(dto.getId(), dto.getIdPaciente(), dto.getIdMedico(), dto.getEstado(), dto.getDetalles());
-        return new ResponseDto(true, "Receta creada exitosamente", gson.toJson(toResponse(receta)));
+    private ResponseDto list() {
+        List<Receta> recetas = recetaService.obtenerTodas();
+        Type t = new TypeToken<List<Receta>>(){}.getType();
+        return new ResponseDto(true, gson.toJson(recetas, t),"");
     }
 
-    private ResponseDto handleUpdate(RequestDto req) {
-        UpdateRecetaRequestDto dto = gson.fromJson(req.getData(), UpdateRecetaRequestDto.class);
-        Receta receta = recetaService.updateReceta(dto.getId(), dto.getEstado());
-        return receta != null
-                ? new ResponseDto(true, "Receta actualizada", gson.toJson(toResponse(receta)))
-                : new ResponseDto(false, "Receta no encontrada", null);
+    private ResponseDto create(RequestDto request) {
+        Receta receta = gson.fromJson(request.getData(), Receta.class);
+        recetaService.guardar(receta);
+        return new ResponseDto(true, "Receta creada", "");
     }
 
-    private ResponseDto handleDelete(RequestDto req) {
-        DeleteRecetaRequestDto dto = gson.fromJson(req.getData(), DeleteRecetaRequestDto.class);
-        boolean ok = recetaService.deleteReceta(dto.getId());
-        return ok ? new ResponseDto(true, "Receta eliminada", null) : new ResponseDto(false, "No encontrada", null);
+    private ResponseDto getById(RequestDto request) {
+        String id = request.getData();
+        Receta r = recetaService.obtenerPorId(id);
+        if (r == null) return new ResponseDto(false, "No encontrada","");
+        return new ResponseDto(true, gson.toJson(r),"");
     }
 
-    private ResponseDto handleList(RequestDto req) {
-        List<Receta> list = recetaService.getAllRecetas();
-        List<RecetaResponseDto> mapped = list.stream().map(this::toResponse).collect(Collectors.toList());
-        return new ResponseDto(true, "Recetas encontradas", gson.toJson(mapped));
-    }
-
-    private ResponseDto handleGet(RequestDto req) {
-        DeleteRecetaRequestDto dto = gson.fromJson(req.getData(), DeleteRecetaRequestDto.class);
-        Receta receta = recetaService.getRecetaById(dto.getId());
-        if (receta == null)
-            return new ResponseDto(false, "Receta no encontrada", null);
-        return new ResponseDto(true, "Receta encontrada", gson.toJson(toResponse(receta)));
-    }
-
-    private RecetaResponseDto toResponse(Receta r) {
-        List<DetalleRecetaDto> detalles = r.getDetalles().stream()
-                .map(d -> new DetalleRecetaDto(d.getIdMedicamento(), d.getCantidad(), d.getIndicaciones(), d.getDuracionDias()))
-                .collect(Collectors.toList());
-
-        return new RecetaResponseDto(
-                r.getId(),
-                r.getIdPaciente(),
-                r.getIdMedico(),
-                r.getEstado(),
-                r.getFechaConfeccion(),
-                r.getFechaRetiro(),
-                detalles
-        );
+    private ResponseDto update(RequestDto request) {
+        Receta receta = gson.fromJson(request.getData(), Receta.class);
+        recetaService.actualizar(receta);
+        return new ResponseDto(true, "Receta actualizada","");
     }
 }

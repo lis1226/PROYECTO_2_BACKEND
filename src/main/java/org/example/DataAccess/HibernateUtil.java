@@ -1,5 +1,6 @@
 package org.example.DataAccess;
 
+import org.example.API.controllers.AdministradorController;
 import org.example.Domain.models.*;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -23,6 +24,12 @@ public class HibernateUtil {
                     .addAnnotatedClass(Farmaceutico.class)
                     .addAnnotatedClass(Medicamento.class)
                     .addAnnotatedClass(Paciente.class)
+                   .addAnnotatedClass(Administrador.class)
+                    .addAnnotatedClass(Receta.class)
+                    .addAnnotatedClass(DetalleReceta.class)
+                    .addAnnotatedClass(Despacho.class)
+                    .addAnnotatedClass(EstadoReceta.class)
+                    .addAnnotatedClass(RecetaItem.class)
                     // Agregar aqui otras entidades.
                     .buildSessionFactory();
 

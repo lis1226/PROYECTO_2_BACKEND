@@ -1,7 +1,10 @@
 package org.example.Server;
 
 import com.google.gson.Gson;
+import jakarta.persistence.EntityManager;
 import org.example.API.controllers.*;
+import org.example.DataAccess.HibernateUtil;
+import org.example.DataAccess.services.RecetaService;
 import org.example.Domain.dtos.RequestDto;
 import org.example.Domain.dtos.ResponseDto;
 import org.example.Domain.dtos.auth.UsuarioResponseDto;
@@ -21,7 +24,9 @@ public class ClientHandler implements Runnable {
     private final MedicamentoController medicamentosController;
     private final PacienteController pacienteController;
     private final RecetaController recetaController;
+    private final DespachoController despachoController;
     private final AdministradorController administradorController;
+    private final DashboardController dashboardController;
     private final SocketServer server ;
     private final Gson gson = new Gson();
     private PrintWriter out;
@@ -29,7 +34,13 @@ public class ClientHandler implements Runnable {
     public ClientHandler(Socket clientSocket,
                          AuthController authController,
                          MedicoController medicoController,
-                         FarmaceuticoController farmaceuticoController, MedicamentoController medicamentosController, PacienteController pacienteController, RecetaController recetaController, AdministradorController administradorController,
+                         FarmaceuticoController farmaceuticoController,
+                         MedicamentoController medicamentosController,
+                         PacienteController pacienteController,
+                         RecetaController recetaController,
+                         AdministradorController administradorController,
+                         DashboardController dashboardController,
+                         DespachoController despachoController,
                          SocketServer server) {
         this.clientSocket = clientSocket;
         this.authController = authController;
@@ -39,6 +50,8 @@ public class ClientHandler implements Runnable {
         this.pacienteController = pacienteController;
         this.recetaController = recetaController;
         this.administradorController = administradorController;
+        this.dashboardController = dashboardController;
+        this.despachoController = despachoController;
         this.server = server;
     }
 
@@ -119,12 +132,20 @@ public class ClientHandler implements Runnable {
                 break;
 
            case "Receta":
-                response = recetaController.route(request);
+               response = recetaController.handle(request);
+                break;
+
+           case "Despacho":
+               response = despachoController.handle(request);
                 break;
 
            case "Admin":
            case "Administrador":
                 response = administradorController.route(request);
+                break;
+
+           case "Dashboard":
+                response = dashboardController.route(request);
                 break;
             default:
                 response = new ResponseDto(false, "Unknown controller", null);

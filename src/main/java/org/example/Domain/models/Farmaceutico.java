@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import org.example.Domain.models.Usuario;
 
 @Entity
-@Table(name = "farmaceuticos")
+@DiscriminatorValue("FARMACEUTICO")
 public class Farmaceutico {
 
     @Id

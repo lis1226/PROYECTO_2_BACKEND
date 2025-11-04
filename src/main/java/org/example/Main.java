@@ -1,10 +1,9 @@
 package org.example;
 
+import jakarta.persistence.EntityManager;
 import org.example.API.controllers.*;
 import org.example.DataAccess.HibernateUtil;
-import org.example.DataAccess.RecetaRepository;
 import org.example.DataAccess.services.*;
-import org.example.Domain.models.Medico;
 import org.example.Server.MessageBroadcaster;
 import org.example.Server.SocketServer;
 
@@ -30,19 +29,35 @@ public class Main {
         PacienteService pacienteService = new PacienteService(sessionFactory);
         PacienteController pacienteController = new PacienteController(pacienteService);
 
-        RecetaService recetaService = new RecetaService(sessionFactory);
-        RecetaController recetaController = new RecetaController(recetaService);
+        EntityManager em = HibernateUtil.getSessionFactory().createEntityManager();
 
+// Services
+        RecetaService recetaService = new RecetaService(em);
+        DespachoService despachoService = new DespachoService(em);
+
+// Controllers (guárdalos o pásalos donde ClientHandler los necesite)
+        RecetaController recetaController = new RecetaController(recetaService);
+        DespachoController despachoController = new DespachoController(despachoService);
         org.example.DataAccess.repositories.AdministradorRepository administradorRepo = new org.example.DataAccess.repositories.AdministradorRepository(sessionFactory);
         AdministradorService administradorService = new AdministradorService(administradorRepo);
         AdministradorController administradorController = new AdministradorController(administradorService);
 
+        org.example.API.controllers.DashboardController dashboardController = new org.example.API.controllers.DashboardController(sessionFactory);
 
         var createUsers = true;
         /*if(createUsers) {
             authService.register("user", "email@example.com", "pass", "USER");
             authService.register("otro", "otro@example.com", "pass", "USER");
         }*/
+
+        /*boolean createUsers = true;
+        if (createUsers) {
+            authService.register("A001", "admin@test.com", "admin123", "ADMIN");
+            authService.register("M001", "medico@test.com", "admin123", "MEDICO");
+            authService.register("F001", "farma@test.com", "admin123", "FARMACEUTICO");
+            authService.register("P001", "paciente@test.com", "admin123", "PACIENTE");
+       }*/
+
 
         // Server for request/response (API-like)
         int requestPort = 7000;
@@ -54,7 +69,9 @@ public class Main {
                 medicamentoController,
                 pacienteController,
                 recetaController,
-                administradorController
+                administradorController,
+                dashboardController,
+                despachoController
                 );
 
         // Server for chat/broadcasting (persistent connections)

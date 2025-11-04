@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuarios")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "rol", discriminatorType = DiscriminatorType.STRING)
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +25,7 @@ public class Usuario {
     @Column(nullable = false)
     private String salt;
 
-    @Column(insertable = false, updatable = false)
+    @Column(name = "rol", insertable = false, updatable = false)
     private String rol; //ADMIN,MEDICO,PACIENTE
 
     @Column(name = "created_at", updatable = false)

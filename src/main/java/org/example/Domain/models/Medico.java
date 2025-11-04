@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.util.Objects;
 
 @Entity
-@Table(name = "medicos")
+@DiscriminatorValue("MEDICO")
 public class Medico{
 
     @Id
